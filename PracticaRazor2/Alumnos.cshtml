@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Notas</title>
+    <link rel="stylesheet" href="Alumnos.css"/>
+</head>
+    <body>
+        @{
+            using(PracticaRazor2.ModeloOcupacional contexto = new PracticaRazor2.ModeloOcupacional()) {
+                var alumnos = (from p in contexto.ALUMNOS orderby p.COD_CUR ascending select p).ToList();
+                int i = 0;
+                if(alumnos != null) {
+                    <form id="formAlumnos" action="~/ModificaAlumnos.cshtml" method="post">
+                        <table>
+                            <tr>
+                                <th>Código Curso</th>
+                                <th>Código Alumno</th>
+                                <th>DNI</th>
+                                <th>Apellidos</th>
+                                <th>Nombre</th>
+                                <th colspan="2"><button type="submit" name="n 0" value="n 0"><img src="add.ico" alt="Nuevo" /></button></th>
+                            </tr>
+
+
+                            @foreach(var alu in alumnos) {
+
+                                <tr>
+                                    <td>@alu.COD_CUR.ToString()</td>
+                                    <td>@alu.COD_ALU.ToString()</td>
+                                    <td>@alu.DNI.ToString()</td>
+                                    <td>@alu.APELLIDOS.ToString()</td>
+                                    <td>@alu.NOMBRE.ToString()</td>
+                                    <td><button type="submit" name="e @i" value="e @i"><img src="edit.ico" alt="Editar" /></button></td>
+                                    <td><button type="submit" name="b @i" value="b @i"><img src="remove.ico" alt="Borrar" /></button></td>
+                                </tr>
+                                i++;
+                            }
+                        </table>
+                    </form>
+                }
+            }
+       }
+        <a href="~/Index.cshtml" id="volver">Volver</a>
+    </body>
+</html>

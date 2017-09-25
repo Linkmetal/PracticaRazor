@@ -1,0 +1,156 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <title>Notas</title>
+        <link href="~/Notas.css" rel="stylesheet" />
+    </head>
+
+
+    <body>
+        <!--FUNCIONES JAVASCRIPT-->
+        <script type="text/javascript">
+
+            function reload() {
+                document.getElementById("formNotas").submit();
+            }
+
+            function showPanel() {
+                document.getElementById("gridNotas").style.display.block;
+            }
+
+            function calculaMedia(){
+                var nota1 = parseInt(document.getElementById("nota1").value);
+                var nota2 = parseInt(document.getElementById("nota2").value);
+                var nota3 = parseInt(document.getElementById("nota3").value);
+                var media = parseInt((nota1 + nota2 + nota3) / 3);
+                document.getElementById("media").value = media;
+            }
+        </script>
+        <!--FUNCIONES JAVASCRIPT-->
+        
+        <!--Actualizacion de variables-->
+        @{  
+            if(IsPost) {
+                if(Request["listacursos"] != null) {
+                    Session["cod_cur"] = (string)Request["listacursos"];
+                }
+                if(Request["Guardar"] != null) {
+                    using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                        string codcur = (string)Session["cod_cur"];
+                        int aluIndex = Convert.ToInt32(Session["aluIndex"]);
+                        var nota = (from n in Contexto.NOTAS orderby n.COD_ALU ascending where n.COD_CUR == codcur select n).ToList();
+                        nota[aluIndex].NOTA1 = Convert.ToInt32(Request["nota1"]);
+                        nota[aluIndex].NOTA2 = Convert.ToInt32(Request["nota2"]);
+                        nota[aluIndex].NOTA3 = Convert.ToInt32(Request["nota3"]);
+                        nota[aluIndex].MEDIA = Convert.ToInt32(Request["media"]);
+                        Contexto.SaveChanges();
+                    }
+                }
+
+            }
+
+        }
+        <!--Actualizacion de variables-->
+
+
+        <!--FORM LISTA DE CURSOS-->
+        @{
+
+            using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                var cursos = (from cur in Contexto.CURSOS orderby cur.COD_CUR select cur);
+                string codcur = (string)Session["cod_cur"];
+            <form id="formNotas" action="Notas.cshtml" method="post">
+            <select ID="listacursos" name="listacursos" onchange="reload()">
+               
+                @if((string)Session["cod_cur"] != "") {
+                    <option value="-1">--Seleccione un curso--</option>
+}
+                else {
+                    <option value="-1" selected="selected">--Seleccione un curso--</option>
+}   
+
+                @foreach(var cur in cursos) {
+                    if(codcur == @cur.COD_CUR) {
+                        <option selected="selected" value="@cur.COD_CUR">@cur.DESCRIPCION</option>
+}
+                    else {
+                        <option value="@cur.COD_CUR">@cur.DESCRIPCION</option>
+}
+                }
+            </select>
+            
+            </form>
+
+
+            }
+            }
+        <!--FORM LISTA DE CURSOS-->
+
+        <!--FORM LISTA DE ALUMNOS-->
+        @{  if(IsPost) {
+            <form id="gridAlumnos" action="Notas.cshtml" method="post">
+                @using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                    string codcur = (string)Session["cod_cur"];
+                    var alumnos = (from p in Contexto.ALUMNOS orderby p.COD_ALU ascending where p.COD_CUR == codcur select p).ToList();
+                    var notas = (from n in Contexto.NOTAS orderby n.COD_ALU ascending where n.COD_CUR == codcur select n).ToList();
+
+                    int i = 0;
+                <table id="gridnotas">
+                    <tr>
+                        <th></th>
+                        <th>APELLIDOS</th>
+                        <th>NOMBRE</th>
+                        <th>NOTA1</th>
+                        <th>NOTA2</th>
+                        <th>NOTA3</th>
+                        <th>MEDIA</th>
+                        <th></th>
+                    </tr>
+
+                    @foreach(var alu in alumnos) {
+                        <tr>
+                            <td>@alu.COD_ALU</td>
+                            <td>@alu.APELLIDOS</td>
+                            <td>@alu.NOMBRE</td>
+                            <td>@notas[i].NOTA1</td>
+                            <td>@notas[i].NOTA2</td>
+                            <td>@notas[i].NOTA3</td>
+                            <td>@notas[i].MEDIA</td>
+                            <td><input type="submit" name="@i" value="Editar" /></td>
+                        </tr>
+i++;
+                    }
+                </table>
+}
+       }
+        </form>
+}
+            }
+        <!--FORM LISTA DE ALUMNOS-->
+
+        <!--FORM MODIFICA NOTAS-->
+           @if(IsPost) {
+            <form id="ModNotas" action="Notas.cshtml" method="post">
+                @{  string[] keys = Request.Form.AllKeys;
+                    int aluIndex;
+                    string codalu = (string)Session["cod_alu"];
+                    if(Int32.TryParse(keys[0], out aluIndex)) {
+                        Session["cod_alu"] = (string)Request["Editar"];
+                        string codcur = (string)Session["cod_cur"];
+                        using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                            var nota = (from n in Contexto.NOTAS orderby n.COD_ALU ascending where n.COD_CUR == codcur select n).ToList();
+                            Session["aluIndex"] = aluIndex.ToString();
+                            <span>Nota1:</span><input type="text" maxlength="2" value="@nota[aluIndex].NOTA1" name="nota1" id="nota1" onchange="calculaMedia()"/><br/><br/>
+                            <span>Nota2:</span><input type="text" maxlength="2" value="@nota[aluIndex].NOTA2" name="nota2" id="nota2" onchange="calculaMedia()" /><br /><br />
+                            <span>Nota3:</span><input type="text" maxlength="2" value="@nota[aluIndex].NOTA3" name="nota3" id="nota3" onchange="calculaMedia()" /><br /><br />
+                            <span>Media:</span><input type="text" maxlength="2" ID="media" value="@nota[aluIndex].MEDIA" name="media" readonly="readonly"/><br /><br />
+                            <input type="submit" name="Guardar" value="Guardar" />
+}
+                    }
+                }
+            </form>
+           }
+         <!--FORM MODIFICA NOTAS-->
+        <a href="~/Index.cshtml" id="volver">Volver</a>
+</body>
+</html>

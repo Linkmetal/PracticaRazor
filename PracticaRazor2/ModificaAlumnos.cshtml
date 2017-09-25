@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="ModificaAlumnos.css" />
+    <title>Modifica Alumnos</title>
+    <script type="text/javascript">
+        function vaciar() {
+            document.getElementById("tboxCod_Alu").value = "";
+            document.getElementById("tboxApellidos").value = "";
+            document.getElementById("tboxNombre").value = "";
+            document.getElementById("tboxDni").value = "";
+        }
+    </script>
+</head>
+<body>
+    @{
+        int aluIndex;
+        if(IsPost) {
+            string comando = "";
+            foreach(var key in Request.Form.AllKeys) {
+                comando = @key;
+            }
+            string[] comando2 = comando.Split(' ');
+            Session["aluIndex"] = comando2[1];
+            if(comando2[0] == "e") {
+                Session["modifica"] = true;
+                Session["borrar"] = false;
+                Session["nuevo"] = false;
+            }
+            if(comando2[0] == "b") {
+                Session["borrar"] = true;
+                Session["modifica"] = false;
+                Session["nuevo"] = true;
+                
+}
+            if(comando2[0] == "n") {
+                Session["modifica"] = false;
+                Session["borrar"] = false;
+                Session["nuevo"] = true;
+            }
+        }
+
+        aluIndex = Convert.ToInt32(Session["aluIndex"]);
+
+        using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+            var cursos = (from cur in Contexto.CURSOS orderby cur.COD_CUR select cur);
+            var alumno = (from p in Contexto.ALUMNOS orderby p.COD_CUR ascending select p).ToList();
+
+            if(!IsPost) {
+                if((bool)Session["modifica"] == true) {
+                    alumno[aluIndex].COD_ALU = Request["cod_alu"];
+                    alumno[aluIndex].COD_CUR = Request["cod_cur"];
+                    alumno[aluIndex].APELLIDOS = Request["apellidos"];
+                    alumno[aluIndex].NOMBRE = Request["nombre"];
+                    alumno[aluIndex].DNI = Request["dni"];
+                    try {
+                        Contexto.SaveChanges();
+                        Session["aluIndex"] = null;
+                        Session["modifica"] = null;
+                        Session["borra"] = null;
+                        Response.Redirect("~/Alumnos.cshtml");
+                    }
+                    catch(Exception) {
+                    <script>alert("Error al modificar el alumno")</script>
+                        throw;
+                    }
+                }
+
+                if((bool)Session["borrar"] == true) {
+                    string codalu = Request["cod_alu"];
+                    try {
+                        var nota = (from n in Contexto.NOTAS orderby n.COD_ALU ascending where n.COD_ALU == codalu select n).First();
+                        Contexto.NOTAS.Remove(nota);
+                        Contexto.ALUMNOS.Remove(alumno[aluIndex]);
+                        Contexto.SaveChanges();
+                        Session["aluIndex"] = null;
+                        Session["modifica"] = null;
+                        Session["borra"] = null;
+                        Response.Redirect("~/Alumnos.cshtml");
+                    }
+                    catch(Exception) {
+                    <script>alert("Error al borrar el alumno, asegurese de que se han borrado las notas primero.")</script>    throw;
+                    }
+                }
+
+                if((bool)Session["nuevo"] == true) {
+
+                    PracticaRazor2.ALUMNOS newalu = new PracticaRazor2.ALUMNOS();
+                    PracticaRazor2.NOTAS newnota = new PracticaRazor2.NOTAS();
+                    newalu.COD_ALU = Request["cod_alu"];
+                    newalu.COD_CUR = Request["cod_cur"];
+                    newalu.APELLIDOS = Request["apellidos"];
+                    newalu.NOMBRE = Request["nombre"];
+                    newalu.DNI = Request["dni"];
+
+                    newnota.COD_ALU = Request["cod_alu"];
+                    newnota.COD_CUR = Request["cod_cur"];
+                    newnota.NOTA1 = -1;
+                    newnota.NOTA2 = -1;
+                    newnota.NOTA3 = -1;
+                    newnota.MEDIA = -1;
+                    try {
+                        Contexto.ALUMNOS.Add(newalu);
+                        Contexto.NOTAS.Add(newnota);
+                        Contexto.SaveChanges();
+                        Session["aluIndex"] = null;
+                        Session["modifica"] = null;
+                        Session["borra"] = null;
+                        Session["nuevo"] = null;
+                        Response.Redirect("~/Alumnos.cshtml");
+                    }
+                    catch(Exception) {
+                        <script>alert("Error al crear el alumno")</script>throw;
+                    }
+                }
+            }
+
+            <form id="form1" action="~/ModificaAlumnos.cshtml">
+                <div id="divAlumno">
+                    <span > Cod_Alu </span>
+                    <input type="text" name="cod_alu" ID="tboxCod_Alu" value="@alumno[aluIndex].COD_ALU"/>
+                    <br />
+                    <span> Cod_Cur</span>
+                    <select ID="listacursos" name="cod_cur" AutoPostBack="true" AppendDataBoundItems="true">
+                        @if((bool)Session["nuevo"] == true && (bool)Session["borrar"] == false) {
+                            <option Value="-1" selected="selected">--Seleccione un curso--</option>
+}
+                        else {
+                            <option Value="-1">--Seleccione un curso--</option>
+}
+                       
+                        @foreach(var cur in cursos) {
+                        if(alumno[aluIndex].COD_CUR == cur.COD_CUR && (bool)Session["nuevo"] != true) {
+                                <option value="@cur.COD_CUR" selected="selected">@cur.DESCRIPCION</option>
+                            }
+                        else {
+                                 <option value="@cur.COD_CUR">@cur.DESCRIPCION</option>
+                            }
+                    }
+
+                    </select>
+                    <br />
+                    <span> DNI</span>
+                    <input type="text" name="dni" ID="tboxDni" value="@alumno[aluIndex].DNI"/>
+                    <br />
+                    <span > Apellidos</span>
+                    <input type="text" name="apellidos" ID="tboxApellidos" value="@alumno[aluIndex].APELLIDOS"/>
+                    <br />
+                    <span > Nombre</span>
+                    <input type="text" name="nombre" ID="tboxNombre" value="@alumno[aluIndex].NOMBRE"/>
+                    <br />
+                    <input type="submit" name="guardar" id="guardar" value="Guardar" />
+                    <a id="volver" href="Alumnos.cshtml">Volver</a>
+                @if((bool)Session["borrar"] != false) {
+                    <script type="text/javascript">
+                        document.getElementById("tboxCod_Alu").readOnly = true;
+                        document.getElementById("tboxApellidos").readOnly = true;
+                        document.getElementById("tboxNombre").readOnly = true;
+                        document.getElementById("tboxDni").readOnly = true;
+                    </script>
+                }
+                @if((bool)Session["nuevo"] == true && (bool)Session["borrar"] == false) {
+                    <script type="text/javascript">vaciar()</script>;
+                }
+                </div>
+            </form>
+            }
+        }
+    <a href="~/Alumnos.cshtml" id="volver">Volver</a>
+    </body>
+</html>

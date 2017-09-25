@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <title>Mantenimiento cursos</title>
+        <link href="Cursos.css" rel="stylesheet" />
+    </head>
+    <body>
+        @{  var codcur = "";
+            var descripcion = "";
+            var horas = "";
+            var tutor = "";
+            int pos = 0;
+            bool nuevo = false;
+            bool guardar = false;
+            bool borrar = false;
+
+            if(IsPost) {
+                pos = Convert.ToInt32(Session["position"]);
+                action(ref pos, ref nuevo, ref guardar, ref borrar);
+            }
+            else {
+                pos = 0;
+            }
+            if(borrar == true) {
+                using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                    var registro = (from cur in Contexto.CURSOS orderby cur.COD_CUR select cur).Skip(pos).First();
+                    try {
+                        Contexto.CURSOS.Remove(registro);
+                        Contexto.SaveChanges();
+                    }
+                    catch(Exception) {
+                        <script>alert("Error al guardar el curso, asegurese de que no tiene alumnos matriculados.")</script>
+                        throw;
+                    }
+                }
+            }
+
+            if(guardar == true) {
+                using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                    if((bool)Session["nuevo"] == true) {
+                        PracticaRazor2.CURSOS newCur = new PracticaRazor2.CURSOS();
+                        newCur.COD_CUR = Request["cod_Cur"];
+                        newCur.DESCRIPCION = Request["descripcion"];
+                        newCur.HORAS = Convert.ToInt32(Request["horas"]);
+                        newCur.TUTOR = Request["tutor"];
+                        Contexto.CURSOS.Add(newCur);
+                        Contexto.SaveChanges();
+                    }
+                    else {
+                        var registro = (from cur in Contexto.CURSOS orderby cur.COD_CUR select cur).Skip(pos).First();
+                        registro.COD_CUR = Request["cod_Cur"];
+                        registro.DESCRIPCION = Request["descripcion"];
+                        registro.HORAS = Convert.ToInt32(Request["horas"]);
+                        registro.TUTOR = Request["tutor"];
+                        Contexto.SaveChanges();
+                    }
+                }
+                guardar = false;
+                nuevo = false;
+            }
+
+
+            if(nuevo == false) {
+                using(PracticaRazor2.ModeloOcupacional Contexto = new PracticaRazor2.ModeloOcupacional()) {
+                    var registro = (from cur in Contexto.CURSOS orderby cur.COD_CUR select cur).Skip(pos).First();
+                    Session["maxCursos"] = Contexto.CURSOS.Count().ToString();
+                    codcur = registro.COD_CUR;
+                    descripcion = registro.DESCRIPCION;
+                    horas = registro.HORAS.ToString();
+                    tutor = registro.TUTOR;
+                }
+            }
+            else {
+                pos = Convert.ToInt32(Session["maxCursos"]) + 1;
+                Session["nuevo"] = true;
+            }
+
+
+            <h1>Mantenimiento cursos</h1>
+            <form id="formCursos" action="~/Cursos.cshtml" method="post">
+                <label>Código curso:</label>
+                <input type="text" name="cod_cur" id="cod_cur" value="@codcur" /><br />
+                <label>Descripción:</label>
+                <input type="text" name="descripcion" id="descripcion" value="@descripcion" /><br />
+                <label>Horas:</label>
+                <input type="text" name="horas" id="horas" value="@horas" /><br />
+                <label>Tutor:</label>
+                <input type="text" name="tutor" id="tutor" value="@tutor" /><br />
+
+                <br /><br />
+
+                <input type="submit" name="first" id="first" value="|<"/>
+                <input type="submit" name="prev" id="prev" value="<<"/>
+                <input type="submit" name="next" id="next" value=">>"/>
+                <input type="submit" name="last" id="last" value=">|" />
+                <input type="submit" name="borra" id="borra" value="Borrar" />
+                <input type="submit" name="mod" id="mod" value="Modifica" />
+                <input type="submit" name="new" id="new" value="Nuevo" />
+
+
+
+               </form>
+            @functions{ 
+                void action(ref int pos, ref bool nuevo, ref bool guardar, ref bool borrar) {
+                    if(Request["first"] != null) {
+                        pos = 0;
+                        Session["position"] = pos.ToString();
+                    }
+                    if(Request["prev"] != null) {
+                        if(pos > 0) pos--;
+                        Session["position"] = pos.ToString();
+                    }
+
+                    if(Request["next"] != null) {
+                        if(pos < Convert.ToInt32(Session["maxCursos"]) - 1) pos++;
+                        Session["position"] = pos.ToString();
+                    }
+                    if(Request["last"] != null) {
+                        pos = Convert.ToInt32(Session["maxCursos"])-1;
+                        Session["position"] = pos.ToString();
+                    }
+                    if(Request["new"] != null) {
+                        nuevo = true;
+                        Session["nuevo"] = true;
+                    }
+                    if(Request["mod"] != null) {
+                        guardar = true;
+                    }
+                    if(Request["borra"] != null) {
+                        borrar = true;
+                    }
+                }
+            }
+        }
+        <a href="~/Index.cshtml" id="volver">Volver</a>
+    </body>
+</html>
